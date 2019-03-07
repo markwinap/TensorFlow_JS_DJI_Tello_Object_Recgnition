@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="TensorFlow DJI Tello Object">
+    <meta name="keywords" content="TensorFlow DJI Tello Object">
+    <title>TensorFlow Tello</title>
+</head>
+<body>
+<div id="container" style="width: 490px; margin: 0 auto;">
+    <video width="490" height="360" controls autoplay poster="images/loader-thumb.jpg" id="player">
+        <source src="/video/dance.mp4" type="video/mp4">
+    </video>
+    <canvas id="output">
+    </canvas>
+</div>
+
+<script type="text/javascript" src="jmuxer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
+
+<script>
+  // Notice there is no 'import' statement. 'cocoSsd' and 'tf' is
+  // available on the index-page because of the script tag above.
+
+/*
+window.onload = function() {
+    var socketURL = 'ws://localhost:8080';
+    var jmuxer = new JMuxer({
+        node: 'player',
+        mode: 'video',
+        flushingTime: 10,
+        fps: 30,
+        debug: false
+     });
+     var ws = new WebSocket(socketURL);
+     ws.binaryType = 'arraybuffer';
+     ws.addEventListener('message',function(event) {
+          jmuxer.feed({
+            video: new Uint8Array(event.data)
+          });
+     });
+     ws.addEventListener('error', function(e) {
+        console.log('Socket Error');
+     });
+ }
+
+*/
+
+let objs = [0,0,0,0];
+var canvas = document.getElementById('output');
+var ctx = canvas.getContext('2d');
+
+var video = document.getElementById('player');
+
+  video.addEventListener('loadedmetadata', function() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+});
+
+video.addEventListener('play', function() {
+  var $this = this; //cache
+  (function loop() {
+    if (!$this.paused && !$this.ended) {
+        
+        ctx.drawImage($this, 0, 0);
+        ctx.strokeStyle = "#FF0000";
+        ctx.strokeRect(objs[0], objs[1], objs[2], objs[3]);
+        //ctx.rect(objs[0], objs[1], objs[2], objs[3]);
+        //ctx.stroke();
+        setTimeout(loop, 1000 / 30); // drawing at 30fps
+    }
+  })();
+}, 0);
+    // Load the model.
+    //MODEL RESPONSE
+    //[{"bbox":[252.77100145816803,73.97323250770569,89.91385698318481,268.7023150920868],"class":"person","score":0.9261573553085327}]
+  cocoSsd.load().then(model => {
+    setInterval(function(){
+        let d = new Date().getTime();
+        model.detect(video).then(predictions => {
+        if(predictions.length > 0){
+            objs = predictions[0].bbox;
+        }
+        console.log('Prediction Time MS : ',(new Date().getTime()) - d);
+        });
+    }, 300);
+
+  });
+</script>
+</html>
